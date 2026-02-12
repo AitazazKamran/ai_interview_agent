@@ -30,20 +30,90 @@ class InterviewAgent:
         self.evaluator = ResponseEvaluator(api_key=groq_api_key)
         self.tts = TextToSpeech(voice="en-US-GuyNeural")
         
-        self.question_bank = [
-            "Tell me about a challenging technical project you've worked on recently.",
-            "How do you approach debugging a complex issue in production?",
-            "Explain the difference between synchronous and asynchronous programming.",
-            "How do you handle deadlines or work pressure?",
-            "Can you describe a challenge you faced at work and how you solved it?",
-            "Do you prefer working independently or in a team? Why?"
-        ]
+        self.role_questions = {
+            "Software Engineer": [
+                "Tell me about a challenging technical project you've worked on recently.",
+                "How do you approach debugging a complex issue in production?",
+                "Explain the difference between synchronous and asynchronous programming.",
+                "What is your experience with version control systems like Git?",
+                "How do you ensure code quality and maintainability in your projects?"
+            ],
+            "Data Analyst": [
+                "How do you approach data cleaning and preprocessing?",
+                "Can you explain the difference between correlation and causation?",
+                "What data visualization tools have you used and which do you prefer?",
+                "Describe a time when you used data to solve a business problem.",
+                "How do you handle missing or incomplete data in your analysis?"
+            ],
+            "Cloud Engineer": [
+                "What is your experience with cloud platforms like AWS, Azure, or GCP?",
+                "How do you ensure security and compliance in cloud deployments?",
+                "Explain the concept of Infrastructure as Code and why it's important.",
+                "How do you approach designing scalable and fault-tolerant systems?",
+                "What monitoring and logging strategies do you use for cloud applications?"
+            ],
+            "HR Screening": [
+                "How do you handle deadlines or work pressure?",
+                "Can you describe a challenge you faced at work and how you solved it?",
+                "Do you prefer working independently or in a team? Why?",
+                "What motivates you in your professional career?",
+                "Tell me about a time when you had to adapt to a significant change at work."
+            ]
+        }
         
-        self.questions = random.sample(self.question_bank, 3)
+        self.selected_role = None
+        self.questions = []
         
         self.all_scores = []
         self.interview_data = []
         
+    def select_role(self) -> bool:
+        """
+        Ask user to select interview role.
+        
+        Returns:
+            True if role selected successfully, False otherwise
+        """
+        print("=" * 50)
+        print("AI INTERVIEW AGENT")
+        print("=" * 50)
+        print()
+        
+        print("Select the interview role:")
+        print("1. 💻 Software Engineer")
+        print("2. 📊 Data Analyst")
+        print("3. ☁️  Cloud Engineer")
+        print("4. 🧠 HR Screening (non-technical)")
+        print()
+        
+        while True:
+            try:
+                choice = input("Enter your choice (1-4): ").strip()
+                
+                role_map = {
+                    "1": "Software Engineer",
+                    "2": "Data Analyst",
+                    "3": "Cloud Engineer",
+                    "4": "HR Screening"
+                }
+                
+                if choice in role_map:
+                    self.selected_role = role_map[choice]
+                    print(f"\nSelected: {self.selected_role}")
+                    print()
+                    
+                    self.questions = random.sample(self.role_questions[self.selected_role], 3)
+                    return True
+                else:
+                    print("Invalid choice. Please enter 1, 2, 3, or 4.")
+                    
+            except KeyboardInterrupt:
+                print("\n\nInterview cancelled.")
+                return False
+            except Exception as e:
+                print(f"Error: {e}")
+                return False
+    
     def setup(self) -> bool:
         """
         Set up the interview environment.
@@ -51,10 +121,6 @@ class InterviewAgent:
         Returns:
             True if setup successful, False otherwise
         """
-        print("=" * 50)
-        print("AI INTERVIEW AGENT")
-        print("=" * 50)
-        print()
         
         print("Testing microphone...", flush=True)
         if not self.audio_recorder.test_microphone():
@@ -157,7 +223,11 @@ class InterviewAgent:
         
         return True
     
-    def conduct_interview(self) -> bool:
+    def conduct_intervlect_role():
+            print("Role selection failed. Exiting.", flush=True)
+            sys.exit(1)
+        
+        if not self.seiew(self) -> bool:
         """
         Conduct the full interview with all questions.
         
