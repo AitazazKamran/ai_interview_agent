@@ -37,6 +37,9 @@ venv.bak/
 recording_*.wav
 temp_tts.mp3
 
+# Coding Test Solutions
+solution_*.txt
+
 # IDE
 .vscode/
 .idea/

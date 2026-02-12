@@ -8,6 +8,7 @@ from audio import AudioRecorder
 from transcriber import SpeechTranscriber
 from evaluator import ResponseEvaluator
 from tts import TextToSpeech
+from code_evaluator import CodeEvaluator
 
 
 class InterviewAgent:
@@ -29,6 +30,7 @@ class InterviewAgent:
         )
         self.evaluator = ResponseEvaluator(api_key=groq_api_key)
         self.tts = TextToSpeech(voice="en-US-GuyNeural")
+        self.code_evaluator = CodeEvaluator(api_key=groq_api_key)
         
         self.role_questions = {
             "Software Engineer": [
@@ -58,6 +60,11 @@ class InterviewAgent:
                 "Do you prefer working independently or in a team? Why?",
                 "What motivates you in your professional career?",
                 "Tell me about a time when you had to adapt to a significant change at work."
+            ],
+            "Coding Test": [
+                "Write a function to reverse a string without using built-in reverse methods.",
+                "Given an array of integers, find two numbers that add up to a target sum.",
+                "Write a function to check if a string is a valid palindrome (ignoring spaces and case)."
             ]
         }
         
@@ -84,17 +91,19 @@ class InterviewAgent:
         print("2. 📊 Data Analyst")
         print("3. ☁️  Cloud Engineer")
         print("4. 🧠 HR Screening (non-technical)")
+        print("5. 👨‍💻 Coding Test")
         print()
         
         while True:
             try:
-                choice = input("Enter your choice (1-4): ").strip()
+                choice = input("Enter your choice (1-5): ").strip()
                 
                 role_map = {
                     "1": "Software Engineer",
                     "2": "Data Analyst",
                     "3": "Cloud Engineer",
-                    "4": "HR Screening"
+                    "4": "HR Screening",
+                    "5": "Coding Test"
                 }
                 
                 if choice in role_map:
@@ -102,10 +111,13 @@ class InterviewAgent:
                     print(f"\nSelected: {self.selected_role}")
                     print()
                     
-                    self.questions = random.sample(self.role_questions[self.selected_role], 3)
+                    if self.selected_role == "Coding Test":
+                        self.questions = self.role_questions[self.selected_role]
+                    else:
+                        self.questions = random.sample(self.role_questions[self.selected_role], 3)
                     return True
                 else:
-                    print("Invalid choice. Please enter 1, 2, 3, or 4.")
+                    print("Invalid choice. Please enter 1, 2, 3, 4, or 5.")
                     
             except KeyboardInterrupt:
                 print("\n\nInterview cancelled.")
@@ -155,7 +167,6 @@ class InterviewAgent:
         self.tts.speak(question)
         print()
         
-        audio_file = f"recording_{question_num}.wav"
         audio_file = f"recording_{question_num}.wav"
         
         input("Press Enter when ready to answer...")
@@ -223,6 +234,80 @@ class InterviewAgent:
         
         return True
     
+    def ask_coding_question(self, question_num: int, question: str) -> bool:
+        """
+        Ask a coding question and evaluate the submitted code.
+        
+        Args:
+            question_num: Question number (1-indexed)
+            question: The coding problem statement
+            
+        Returns:
+            True if question processed successfully, False otherwise
+        """
+        print("-" * 40)
+        print(f"CODING PROBLEM {question_num}:")
+        print(question)
+        print()
+        
+        code_file = f"solution_{question_num}.txt"
+        
+        with open(code_file, 'w') as f:
+            f.write(f"# Problem {question_num}: {question}\n")
+            f.write("# Write your code below:\n\n")
+        
+        print(f"A text file '{code_file}' has been created.")
+        print("Write your code solution in this file.")
+        print()
+        
+        if os.name == 'nt':
+            os.system(f'notepad {code_file}')
+        else:
+            print(f"Please edit {code_file} in your preferred text editor.")
+        
+        input("Press Enter when you've finished writing your code...")
+        print()
+        
+        if not os.path.exists(code_file):
+            print("Code file not found.", flush=True)
+            return False
+        
+        with open(code_file, 'r') as f:
+            code = f.read()
+        
+        print("CODE SUBMITTED:")
+        print(code)
+        print()
+        
+        print("Evaluating your code...", flush=True)
+        evaluation = self.code_evaluator.evaluate_code(question, code)
+        
+        print("EVALUATION:")
+        print(f"- Correctness: {evaluation['correctness']}/5")
+        print(f"- Code Quality: {evaluation['code_quality']}/5")
+        print(f"- Efficiency: {evaluation['efficiency']}/5")
+        print(f"- Overall Score: {evaluation['overall_score']}/5")
+        print()
+        print(f"FEEDBACK: {evaluation['feedback']}")
+        print()
+        
+        scores = {
+            "Correctness": evaluation['correctness'],
+            "Code Quality": evaluation['code_quality'],
+            "Efficiency": evaluation['efficiency'],
+            "Overall": evaluation['overall_score']
+        }
+        
+        self.all_scores.append(scores)
+        self.interview_data.append({
+            "question": question,
+            "code": code,
+            "scores": scores,
+            "feedback": evaluation['feedback']
+        })
+        
+        return True
+    
     def conduct_interview(self) -> bool:
         """
         Conduct the full interview with all questions.
@@ -230,15 +315,25 @@ class InterviewAgent:
         Returns:
             True if interview completed successfully, False otherwise
         """
-        print("The interview will consist of 3 questions.")
-        print("After each question, you will have up to 60 seconds to respond.")
-        print("Recording will automatically stop after 2 seconds of silence.")
-        print()
-        
-        for i, question in enumerate(self.questions, start=1):
-            if not self.ask_question(i, question):
-                print(f"Error processing question {i}. Aborting interview.", flush=True)
-                return False
+        if self.selected_role == "Coding Test":
+            print("The coding test will consist of 3 problems.")
+            print("For each problem, a text file will open for you to write your solution.")
+            print()
+            
+            for i, question in enumerate(self.questions, start=1):
+                if not self.ask_coding_question(i, question):
+                    print(f"Error processing problem {i}. Aborting test.", flush=True)
+                    return False
+        else:
+            print("The interview will consist of 3 questions.")
+            print("After each question, you will have up to 60 seconds to respond.")
+            print("Recording will automatically stop after 2 seconds of silence.")
+            print()
+            
+            for i, question in enumerate(self.questions, start=1):
+                if not self.ask_question(i, question):
+                    print(f"Error processing question {i}. Aborting interview.", flush=True)
+                    return False
         
         return True
     
