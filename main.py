@@ -223,11 +223,7 @@ class InterviewAgent:
         
         return True
     
-    def conduct_intervlect_role():
-            print("Role selection failed. Exiting.", flush=True)
-            sys.exit(1)
-        
-        if not self.seiew(self) -> bool:
+    def conduct_interview(self) -> bool:
         """
         Conduct the full interview with all questions.
         
@@ -270,6 +266,10 @@ class InterviewAgent:
     
     def run(self):
         """Main entry point to run the interview agent."""
+        if not self.select_role():
+            print("Role selection failed. Exiting.", flush=True)
+            sys.exit(1)
+        
         if not self.setup():
             print("Setup failed. Exiting.", flush=True)
             sys.exit(1)
